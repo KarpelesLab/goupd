@@ -1,8 +1,10 @@
 package goupd
 
-import "os"
+import (
+	"os"
+	"syscall"
+)
 
-var shutdownCallback func() error = nil
 var restartCallback func() error = nil
 
 func restartProgram() error {
@@ -15,26 +17,7 @@ func restartProgram() error {
 		return err
 	}
 
-	procAttr := new(os.ProcAttr)
-	procAttr.Files = []*os.File{os.Stdin, os.Stdout, os.Stderr}
-	procAttr.Env = append(os.Environ(), "GOUPD_DELAY=5")
-
-	_, err = os.StartProcess(exe, os.Args, procAttr)
-	if err != nil {
-		return err
-	}
-
-	if shutdownCallback != nil {
-		return shutdownCallback()
-	} else {
-		os.Exit(0)
-	}
-
-	return nil
-}
-
-func SetShutdownCallback(cb func() error) {
-	shutdownCallback = cb
+	return syscall.Exec(exe, os.Args, append(os.Environ(), "GOUPD_DELAY=5"))
 }
 
 func SetRestartCallback(cb func() error) {

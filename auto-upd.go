@@ -16,7 +16,7 @@ import (
 	"github.com/ulikunitz/xz"
 )
 
-func AutoUpdate() {
+func AutoUpdate(allowTest bool) {
 	log.Printf("[goupd] Running project %s version %s built %s", PROJECT_NAME, GIT_TAG, DATE_TAG)
 
 	delay := os.Getenv("GOUPD_DELAY")
@@ -29,15 +29,26 @@ func AutoUpdate() {
 		os.Unsetenv("GOUPD_DELAY")
 	}
 
+	if allowTest {
+		go autoUpdaterThread(true)
+		return
+	}
+
 	if MODE != "PROD" {
 		log.Println("[goupd] Auto-updater disabled since not in production mode")
 		return
 	}
 
-	go autoUpdaterThread()
+	go autoUpdaterThread(false)
 }
 
-func autoUpdaterThread() {
+func autoUpdaterThread(initalRun bool) {
+	if initialRun {
+		if runAutoUpdateCheck() {
+			return
+		}
+	}
+
 	for {
 		time.Sleep(time.Hour)
 
