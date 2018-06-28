@@ -42,7 +42,7 @@ func AutoUpdate(allowTest bool) {
 	go autoUpdaterThread(false)
 }
 
-func autoUpdaterThread(initalRun bool) {
+func autoUpdaterThread(initialRun bool) {
 	if initialRun {
 		if runAutoUpdateCheck() {
 			return
