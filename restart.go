@@ -2,7 +2,14 @@ package goupd
 
 import "os"
 
+var shutdownCallback func() error = nil
+var restartCallback func() error = nil
+
 func restartProgram() error {
+	if restartCallback != nil {
+		return restartCallback()
+	}
+
 	exe, err := os.Executable()
 	if err != nil {
 		return err
@@ -16,6 +23,20 @@ func restartProgram() error {
 	if err != nil {
 		return err
 	}
-	os.Exit(0)
+
+	if shutdownCallback != nil {
+		return shutdownCallback()
+	} else {
+		os.Exit(0)
+	}
+
 	return nil
+}
+
+func SetShutdownCallback(cb func() error) {
+	shutdownCallback = cb
+}
+
+func SetRestartCallback(cb func() error) {
+	restartCallback = cb
 }

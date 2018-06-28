@@ -33,46 +33,49 @@ func AutoUpdate() {
 		log.Println("[goupd] Auto-updater disabled since not in production mode")
 		return
 	}
-	log.Println("[goupd] Auto-updater initialized, checking for latest version...")
 
 	go autoUpdaterThread()
 }
 
 func autoUpdaterThread() {
 	for {
-		runAutoUpdateCheck()
 		time.Sleep(time.Hour)
+
+		// stop auto-updater loop if there was an update
+		if runAutoUpdateCheck() {
+			return
+		}
 	}
 }
 
-func runAutoUpdateCheck() {
+func runAutoUpdateCheck() bool {
 	// get latest version
 	if PROJECT_NAME == "unconfigured" {
 		log.Println("[goupd] Auto-updater failed to run, project not properly configured")
-		return
+		return false
 	}
 	resp, err := http.Get("https://dist-go.tristandev.net/" + PROJECT_NAME + "/LATEST")
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to run: %s", err)
-		return
+		return false
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to read latest version: %s", err)
-		return
+		return false
 	}
 
 	updInfo := strings.SplitN(strings.TrimSpace(string(body)), " ", 3)
 	if len(updInfo) != 3 {
 		log.Printf("[goupd] Auto-updater failed to parse update data (%s)", body)
-		return
+		return false
 	}
 
 	if updInfo[1] == GIT_TAG {
 		log.Printf("[goupd] Current version is up to date (%s)", GIT_TAG)
-		return
+		return false
 	}
 
 	log.Printf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", updInfo[0], updInfo[1], DATE_TAG, GIT_TAG)
@@ -83,14 +86,14 @@ func runAutoUpdateCheck() {
 	resp, err = http.Get("https://dist-go.tristandev.net/" + PROJECT_NAME + "/" + updPrefix + ".arch")
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to get arch info: %s", err)
-		return
+		return false
 	}
 	defer resp.Body.Close()
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to read arch info: %s", err)
-		return
+		return false
 	}
 
 	found := false
@@ -105,21 +108,21 @@ func runAutoUpdateCheck() {
 
 	if !found {
 		log.Printf("[goupd] Auto-updater unable to run, no version available for %s", myself)
-		return
+		return false
 	}
 
 	// download actual update
 	resp, err = http.Get("https://dist-go.tristandev.net/" + PROJECT_NAME + "/" + updPrefix + ".tar.xz")
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to get update: %s", err)
-		return
+		return false
 	}
 	defer resp.Body.Close()
 
 	tarStream, err := xz.NewReader(resp.Body)
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to decompress update: %s", err)
-		return
+		return false
 	}
 
 	tarInfo := tar.NewReader(tarStream)
@@ -128,11 +131,11 @@ func runAutoUpdateCheck() {
 		header, err := tarInfo.Next()
 		if err == io.EOF {
 			log.Println("[goupd] Auto-updater failed to find appropriate version")
-			return
+			return false
 		}
 		if err != nil {
 			log.Printf("[goupd] Auto-updater failed to read update: %s", err)
-			return
+			return false
 		}
 
 		if strings.HasSuffix(header.Name, myself) {
@@ -143,8 +146,9 @@ func runAutoUpdateCheck() {
 			} else {
 				log.Printf("[goupd] Program upgraded, restarting")
 				restartProgram()
+				return true
 			}
-			return
+			return false
 		}
 
 		log.Printf("[goupd] Skipping file %s", header.Name)
