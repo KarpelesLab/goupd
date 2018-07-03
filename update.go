@@ -14,6 +14,10 @@ import (
 	"github.com/ulikunitz/xz"
 )
 
+// RunAutoUpdateCheck will perform the update check, update the executable and
+// return false if no update was performed. In case of update the program
+// should restart and RunAutoUpdateCheck() should not return, but if it does,
+// it'll return true.
 func RunAutoUpdateCheck() bool {
 	// get latest version
 	if PROJECT_NAME == "unconfigured" {
