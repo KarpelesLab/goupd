@@ -2,3 +2,4 @@
 
 all:
 	goimports -w -l .
+	go build -v
