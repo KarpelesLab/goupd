@@ -3,7 +3,9 @@ package goupd
 import (
 	"log"
 	"os"
+	"os/signal"
 	"strconv"
+	"syscall"
 	"time"
 )
 
@@ -29,6 +31,17 @@ func AutoUpdate(allowTest bool) {
 		log.Println("[goupd] Auto-updater disabled since not in production mode")
 		return
 	}
+
+	// install SIGHUP handler
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, syscall.SIGHUP)
+
+	go func() {
+		for {
+			<-c
+			RunAutoUpdateCheck()
+		}
+	}()
 
 	go autoUpdaterThread(false)
 }
