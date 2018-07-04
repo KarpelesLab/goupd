@@ -1,7 +1,7 @@
 package goupd
 
 import (
-	"archive/tar"
+	"compress/bzip2"
 	"io"
 	"io/ioutil"
 	"log"
@@ -10,8 +10,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"github.com/ulikunitz/xz"
 )
 
 // RunAutoUpdateCheck will perform the update check, update the executable and
@@ -82,46 +80,24 @@ func RunAutoUpdateCheck() bool {
 	}
 
 	// download actual update
-	resp, err = http.Get("https://dist-go.tristandev.net/" + PROJECT_NAME + "/" + updPrefix + ".tar.xz")
+	resp, err = http.Get("https://dist-go.tristandev.net/" + PROJECT_NAME + "/" + updPrefix + "/" + PROJECT_NAME + "_" + myself + ".bz2")
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to get update: %s", err)
 		return false
 	}
 	defer resp.Body.Close()
 
-	tarStream, err := xz.NewReader(resp.Body)
+	stream := bzip2.NewReader(resp.Body)
+
+	err = installUpdate(stream)
+
 	if err != nil {
-		log.Printf("[goupd] Auto-updater failed to decompress update: %s", err)
+		log.Printf("[goupd] Auto-updater failed to install update: %s", err)
 		return false
-	}
-
-	tarInfo := tar.NewReader(tarStream)
-
-	for {
-		header, err := tarInfo.Next()
-		if err == io.EOF {
-			log.Println("[goupd] Auto-updater failed to find appropriate version")
-			return false
-		}
-		if err != nil {
-			log.Printf("[goupd] Auto-updater failed to read update: %s", err)
-			return false
-		}
-
-		if strings.HasSuffix(header.Name, myself) {
-			log.Printf("[goupd] FOUND file %s", header.Name)
-			err = installUpdate(tarInfo)
-			if err != nil {
-				log.Printf("[goupd] Auto-updater failed to install update: %s", err)
-			} else {
-				log.Printf("[goupd] Program upgraded, restarting")
-				restartProgram()
-				return true
-			}
-			return false
-		}
-
-		log.Printf("[goupd] Skipping file %s", header.Name)
+	} else {
+		log.Printf("[goupd] Program upgraded, restarting")
+		restartProgram()
+		return true
 	}
 }
 
