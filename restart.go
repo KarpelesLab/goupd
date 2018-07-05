@@ -17,7 +17,7 @@ func restartProgram() error {
 		return err
 	}
 
-	return syscall.Exec(exe, os.Args, append(os.Environ(), "GOUPD_DELAY=5"))
+	return syscall.Exec(exe, os.Args, append(os.Environ(), "GOUPD_DELAY=1"))
 }
 
 func SetRestartCallback(cb func() error) {
