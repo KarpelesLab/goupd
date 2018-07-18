@@ -51,11 +51,12 @@ func AutoUpdate(allowTest bool) {
 	}
 }
 
-func autoUpdaterThread(initialRun bool) {
-	if initialRun {
-		if RunAutoUpdateCheck() {
-			return
-		}
+func autoUpdaterThread(immediateInitialRun bool) {
+	if !immediateInitialRun {
+		time.Sleep(time.Minute)
+	}
+	if RunAutoUpdateCheck() {
+		return
 	}
 
 	for {
