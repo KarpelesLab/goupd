@@ -43,7 +43,12 @@ func AutoUpdate(allowTest bool) {
 		}
 	}()
 
-	go autoUpdaterThread(false)
+	if os.Getenv("GOUPD_NOW") != "" {
+		// do an immediate run
+		go autoUpdaterThread(true)
+	} else {
+		go autoUpdaterThread(false)
+	}
 }
 
 func autoUpdaterThread(initialRun bool) {
