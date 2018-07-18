@@ -5,6 +5,7 @@ package goupd
 import (
 	"errors"
 	"os"
+	"syscall"
 )
 
 var restartCallback func() error = nil
@@ -19,11 +20,11 @@ func restartProgram() error {
 		return err
 	}
 
-	pattr := &ProcAttr{
+	pattr := &syscall.ProcAttr{
 		Env: append(os.Environ(), "GOUPD_DELAY=1"),
 	}
 
-	_, _, err = StartProcess(exe, os.Args, pattr)
+	_, _, err = syscall.StartProcess(exe, os.Args, pattr)
 	if err != nil {
 		return err
 	}
