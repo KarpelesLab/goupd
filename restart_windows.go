@@ -21,7 +21,8 @@ func restartProgram() error {
 	}
 
 	pattr := &syscall.ProcAttr{
-		Env: append(os.Environ(), "GOUPD_DELAY=1"),
+		Env:   append(os.Environ(), "GOUPD_DELAY=1"),
+		Files: []uintptr{uintptr(syscall.Stdin), uintptr(syscall.Stdout), uintptr(syscall.Stderr)},
 	}
 
 	_, _, err = syscall.StartProcess(exe, os.Args, pattr)
