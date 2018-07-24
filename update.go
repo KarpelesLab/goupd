@@ -10,13 +10,39 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 )
+
+var autoUpdateLock sync.Mutex
+
+// SignalVersion is called when seeing another peer running the same software
+// to notify of its version. This will check if the peer is updated compared
+// to us, and call RunAutoUpdateCheck() if necessary
+func SignalVersion(git, build string) {
+	if git == "" {
+		return
+	}
+	if git == GIT_TAG {
+		return
+	}
+
+	// compare build
+	if build <= DATE_TAG {
+		return // we are more recent (or equal)
+	}
+
+	// perform check
+	go RunAutoUpdateCheck()
+}
 
 // RunAutoUpdateCheck will perform the update check, update the executable and
 // return false if no update was performed. In case of update the program
 // should restart and RunAutoUpdateCheck() should not return, but if it does,
 // it'll return true.
 func RunAutoUpdateCheck() bool {
+	autoUpdateLock.Lock()
+	defer autoUpdateLock.Unlock()
+
 	// get latest version
 	if PROJECT_NAME == "unconfigured" {
 		log.Println("[goupd] Auto-updater failed to run, project not properly configured")
