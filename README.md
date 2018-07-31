@@ -1,6 +1,6 @@
 # goupd
 
-Internal auto-updater library that goes with the [make-go](https://github.com/magicaltux/make-go) project.
+Internal auto-updater library that goes with the [make-go](https://github.com/TrisTech/make-go) project.
 
-[Documentation](https://godoc.org/github.com/MagicalTux/goupd)
+[Documentation](https://godoc.org/github.com/TrisTech/goupd)
 
