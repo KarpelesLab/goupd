@@ -5,4 +5,5 @@ var (
 	MODE         string = "DEV"
 	GIT_TAG      string = ""
 	DATE_TAG     string = "0"
+	HOST         string = "https://dist-go.tristandev.net/"
 )

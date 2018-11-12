@@ -48,7 +48,7 @@ func RunAutoUpdateCheck() bool {
 		log.Println("[goupd] Auto-updater failed to run, project not properly configured")
 		return false
 	}
-	resp, err := http.Get("https://dist-go.tristandev.net/" + PROJECT_NAME + "/LATEST")
+	resp, err := http.Get(HOST + PROJECT_NAME + "/LATEST")
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to run: %s", err)
 		return false
@@ -77,7 +77,7 @@ func RunAutoUpdateCheck() bool {
 	updPrefix := updInfo[2]
 
 	// check if compatible version is available
-	resp, err = http.Get("https://dist-go.tristandev.net/" + PROJECT_NAME + "/" + updPrefix + ".arch")
+	resp, err = http.Get(HOST + PROJECT_NAME + "/" + updPrefix + ".arch")
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to get arch info: %s", err)
 		return false
@@ -106,7 +106,7 @@ func RunAutoUpdateCheck() bool {
 	}
 
 	// download actual update
-	resp, err = http.Get("https://dist-go.tristandev.net/" + PROJECT_NAME + "/" + updPrefix + "/" + PROJECT_NAME + "_" + myself + ".bz2")
+	resp, err = http.Get(HOST + PROJECT_NAME + "/" + updPrefix + "/" + PROJECT_NAME + "_" + myself + ".bz2")
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed to get update: %s", err)
 		return false
