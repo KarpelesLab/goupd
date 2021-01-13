@@ -11,6 +11,7 @@ import (
 	"runtime"
 	"strings"
 	"sync"
+	"time"
 )
 
 var autoUpdateLock sync.Mutex
@@ -121,6 +122,9 @@ func RunAutoUpdateCheck() bool {
 		log.Printf("[goupd] Auto-updater failed to install update: %s", err)
 		return false
 	} else {
+		for BusyState() > 0 {
+			time.Sleep(60 * time.Second)
+		}
 		log.Printf("[goupd] Program upgraded, restarting")
 		restartProgram()
 		return true
