@@ -104,6 +104,10 @@ func GetUpdate(projectName, curTag, os, arch string) (string, string, string, er
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode != 200 {
+		return "", "", "", fmt.Errorf("failed to get latest version: %s", resp.Status)
+	}
+
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to read latest version: %w", err)
@@ -132,6 +136,10 @@ func GetUpdate(projectName, curTag, os, arch string) (string, string, string, er
 		return "", "", "", fmt.Errorf("failed to get arch info: %w", err)
 	}
 	defer resp.Body.Close()
+
+	if resp.StatusCode != 200 {
+		return "", "", "", fmt.Errorf("failed to get arch info: %s", resp.Status)
+	}
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
