@@ -2,6 +2,7 @@ package goupd
 
 import (
 	"compress/bzip2"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"log"
@@ -49,86 +50,108 @@ func RunAutoUpdateCheck() bool {
 		log.Println("[goupd] Auto-updater failed to run, project not properly configured")
 		return false
 	}
-	resp, err := http.Get(HOST + PROJECT_NAME + "/LATEST")
+
+	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, func(dateTag, gitTag string, r io.Reader) error {
+		log.Printf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", dateTag, gitTag, DATE_TAG, GIT_TAG)
+
+		return installUpdate(r)
+	})
+
 	if err != nil {
-		log.Printf("[goupd] Auto-updater failed to run: %s", err)
+		log.Printf("[goupd] Auto-updater failed: %s", err)
 		return false
+	} else {
+		for BusyState() > 0 {
+			time.Sleep(10 * time.Second)
+		}
+		log.Printf("[goupd] Program upgraded, restarting")
+		restartProgram()
+		return true
+	}
+}
+
+func Fetch(projectName, curTag, os, arch string, cb func(dateTag, gitTag string, r io.Reader) error) error {
+	dlUrl, gitTag, dateTag, err := GetUpdate(projectName, curTag, os, arch)
+	if err != nil {
+		return err
+	}
+	if gitTag == curTag {
+		return nil
+	}
+	if dlUrl == "" {
+		return nil
+	}
+
+	// download actual update
+	resp, err := http.Get(dlUrl)
+	if err != nil {
+		return fmt.Errorf("failed to download update: %w", err)
+	}
+	defer resp.Body.Close()
+
+	var r io.Reader
+	r = resp.Body
+
+	r = bzip2.NewReader(r)
+
+	return cb(dateTag, gitTag, r)
+}
+
+func GetUpdate(projectName, curTag, os, arch string) (string, string, string, error) {
+	resp, err := http.Get(HOST + projectName + "/LATEST")
+	if err != nil {
+		return "", "", "", fmt.Errorf("failed to get latest version: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("[goupd] Auto-updater failed to read latest version: %s", err)
-		return false
+		return "", "", "", fmt.Errorf("failed to read latest version: %w", err)
 	}
 
 	updInfo := strings.SplitN(strings.TrimSpace(string(body)), " ", 3)
 	if len(updInfo) != 3 {
-		log.Printf("[goupd] Auto-updater failed to parse update data (%s)", body)
-		return false
+		return "", "", "", fmt.Errorf("failed to parse update data (%s)", body)
 	}
 
-	if updInfo[1] == GIT_TAG {
-		log.Printf("[goupd] Current version is up to date (%s)", GIT_TAG)
-		return false
-	}
-
-	log.Printf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", updInfo[0], updInfo[1], DATE_TAG, GIT_TAG)
-
+	dateTag := updInfo[0]
+	gitTag := updInfo[1]
 	updPrefix := updInfo[2]
 
+	target := os + "_" + arch
+	dlUrl := HOST + projectName + "/" + updPrefix + "/" + projectName + "_" + target + ".bz2"
+
+	if curTag == updInfo[1] {
+		// no update needed, don't perform arch check
+		return dlUrl, dateTag, gitTag, nil
+	}
+
 	// check if compatible version is available
-	resp, err = http.Get(HOST + PROJECT_NAME + "/" + updPrefix + ".arch")
+	resp, err = http.Get(HOST + projectName + "/" + updPrefix + ".arch")
 	if err != nil {
-		log.Printf("[goupd] Auto-updater failed to get arch info: %s", err)
-		return false
+		return "", "", "", fmt.Errorf("failed to get arch info: %w", err)
 	}
 	defer resp.Body.Close()
 
 	body, err = ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Printf("[goupd] Auto-updater failed to read arch info: %s", err)
-		return false
+		return "", "", "", fmt.Errorf("failed to read arch info: %w", err)
 	}
 
 	found := false
-	myself := runtime.GOOS + "_" + runtime.GOARCH
 
-	for _, arch := range strings.Split(strings.TrimSpace(string(body)), " ") {
-		if arch == myself {
+	for _, subarch := range strings.Split(strings.TrimSpace(string(body)), " ") {
+		if subarch == target {
 			found = true
 			break
 		}
 	}
 
 	if !found {
-		log.Printf("[goupd] Auto-updater unable to run, no version available for %s", myself)
-		return false
+		return "", "", "", fmt.Errorf("no version available for %s", target)
 	}
 
-	// download actual update
-	resp, err = http.Get(HOST + PROJECT_NAME + "/" + updPrefix + "/" + PROJECT_NAME + "_" + myself + ".bz2")
-	if err != nil {
-		log.Printf("[goupd] Auto-updater failed to get update: %s", err)
-		return false
-	}
-	defer resp.Body.Close()
-
-	stream := bzip2.NewReader(resp.Body)
-
-	err = installUpdate(stream)
-
-	if err != nil {
-		log.Printf("[goupd] Auto-updater failed to install update: %s", err)
-		return false
-	} else {
-		for BusyState() > 0 {
-			time.Sleep(60 * time.Second)
-		}
-		log.Printf("[goupd] Program upgraded, restarting")
-		restartProgram()
-		return true
-	}
+	return dlUrl, dateTag, gitTag, nil
 }
 
 func installUpdate(r io.Reader) error {
