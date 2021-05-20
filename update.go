@@ -51,8 +51,11 @@ func RunAutoUpdateCheck() bool {
 		return false
 	}
 
+	updated := false
+
 	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, func(dateTag, gitTag string, r io.Reader) error {
 		log.Printf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", dateTag, gitTag, DATE_TAG, GIT_TAG)
+		updated = true
 
 		return installUpdate(r)
 	})
@@ -60,14 +63,15 @@ func RunAutoUpdateCheck() bool {
 	if err != nil {
 		log.Printf("[goupd] Auto-updater failed: %s", err)
 		return false
-	} else {
-		for BusyState() > 0 {
-			time.Sleep(10 * time.Second)
-		}
-		log.Printf("[goupd] Program upgraded, restarting")
-		restartProgram()
-		return true
+	} else if !updated {
+		return false
 	}
+	for BusyState() > 0 {
+		time.Sleep(10 * time.Second)
+	}
+	log.Printf("[goupd] Program upgraded, restarting")
+	restartProgram()
+	return true
 }
 
 func Fetch(projectName, curTag, os, arch string, cb func(dateTag, gitTag string, r io.Reader) error) error {
