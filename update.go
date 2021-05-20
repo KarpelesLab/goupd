@@ -71,7 +71,7 @@ func RunAutoUpdateCheck() bool {
 }
 
 func Fetch(projectName, curTag, os, arch string, cb func(dateTag, gitTag string, r io.Reader) error) error {
-	dlUrl, gitTag, dateTag, err := GetUpdate(projectName, curTag, os, arch)
+	dlUrl, dateTag, gitTag, err := GetUpdate(projectName, curTag, os, arch)
 	if err != nil {
 		return err
 	}
