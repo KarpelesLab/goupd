@@ -12,7 +12,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"time"
 )
 
 var autoUpdateLock sync.Mutex
@@ -66,9 +65,10 @@ func RunAutoUpdateCheck() bool {
 	} else if !updated {
 		return false
 	}
-	for BusyState() > 0 {
-		time.Sleep(10 * time.Second)
-	}
+
+	busyLock()
+	defer busyUnlock()
+
 	log.Printf("[goupd] Program upgraded, restarting")
 	restartProgram()
 	return true

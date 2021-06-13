@@ -1,25 +1,21 @@
 package goupd
 
-import "sync/atomic"
+import "sync"
 
-var busyCnt uint64
+var busyMutex sync.RWMutex
 
-func BusyAdd(n uint64) {
-	atomic.AddUint64(&busyCnt, n)
+func busyLock() {
+	busyMutex.Lock()
 }
 
-func BusySub(n uint64) {
-	atomic.AddUint64(&busyCnt, ^uint64(n-1))
+func busyUnlock() {
+	busyMutex.Unlock()
 }
 
 func Busy() {
-	atomic.AddUint64(&busyCnt, 1)
+	busyMutex.RLock()
 }
 
 func Unbusy() {
-	atomic.AddUint64(&busyCnt, ^uint64(0))
-}
-
-func BusyState() uint64 {
-	return atomic.LoadUint64(&busyCnt)
+	busyMutex.RUnlock()
 }
