@@ -2,10 +2,21 @@ package goupd
 
 import "sync"
 
-var busyMutex sync.RWMutex
+var (
+	busyMutex sync.Mutex
+	busyState uint32
+	busyCond  = sync.NewCond(&busyMutex)
+)
 
 func busyLock() {
 	busyMutex.Lock()
+	for {
+		if busyState <= 0 {
+			return
+		}
+		// other tasks are running, wait for busyState to decrease
+		busyCond.Wait()
+	}
 }
 
 func busyUnlock() {
@@ -13,9 +24,17 @@ func busyUnlock() {
 }
 
 func Busy() {
-	busyMutex.RLock()
+	busyMutex.Lock()
+	defer busyMutex.Unlock()
+	busyState += 1
 }
 
 func Unbusy() {
-	busyMutex.RUnlock()
+	busyMutex.Lock()
+	defer busyMutex.Unlock()
+	busyState -= 1
+
+	if busyState <= 0 {
+		busyCond.Broadcast()
+	}
 }
