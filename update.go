@@ -102,7 +102,12 @@ func Fetch(projectName, curTag, os, arch string, cb func(dateTag, gitTag string,
 }
 
 func GetUpdate(projectName, curTag, os, arch string) (string, string, string, error) {
-	resp, err := http.Get(HOST + projectName + "/LATEST")
+	latest := HOST + projectName + "/LATEST"
+	if CHANNEL != "stable" {
+		// for example LATEST-testing
+		latest += "-" + CHANNEL
+	}
+	resp, err := http.Get(latest)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to get latest version: %w", err)
 	}
