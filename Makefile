@@ -3,3 +3,6 @@
 all:
 	goimports -w -l .
 	go build -v
+
+test:
+	go test -v
