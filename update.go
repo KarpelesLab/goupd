@@ -16,6 +16,10 @@ import (
 
 var autoUpdateLock sync.Mutex
 
+// BeforeRestart is called just before the program is restarted, and can be
+// used to prepare for restart, such as duplicating fds before exec/etc.
+var BeforeRestart func()
+
 // SignalVersion is called when seeing another peer running the same software
 // to notify of its version. This will check if the peer is updated compared
 // to us, and call RunAutoUpdateCheck() if necessary
@@ -70,6 +74,9 @@ func RunAutoUpdateCheck() bool {
 	defer busyUnlock()
 
 	log.Printf("[goupd] Program upgraded, restarting")
+	if BeforeRestart != nil {
+		BeforeRestart()
+	}
 	restartProgram()
 	return true
 }
