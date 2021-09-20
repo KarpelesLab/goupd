@@ -5,27 +5,8 @@ package goupd
 import (
 	"errors"
 	"os"
-	"path/filepath"
 	"syscall"
 )
-
-var win_exe string
-
-func init() {
-	exe, err := os.Executable()
-	if err == nil {
-		win_exe = exe
-		return
-	}
-
-	exe, err := filepath.Abs(os.Args[0])
-	if err == nil {
-		win_exe = exe
-		return
-	}
-
-	win_exe = os.Args[0] // ???
-}
 
 func RestartProgram() error {
 	pattr := &syscall.ProcAttr{
@@ -33,7 +14,7 @@ func RestartProgram() error {
 		Files: []uintptr{uintptr(syscall.Stdin), uintptr(syscall.Stdout), uintptr(syscall.Stderr)},
 	}
 
-	_, _, err = syscall.StartProcess(win_exe, os.Args, pattr)
+	_, _, err = syscall.StartProcess(self_exe, os.Args, pattr)
 	if err != nil {
 		return err
 	}

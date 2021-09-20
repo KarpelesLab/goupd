@@ -185,12 +185,7 @@ func GetUpdate(projectName, curTag, os, arch string) (string, string, string, er
 
 func installUpdate(r io.Reader) error {
 	// install updated file (in io.Reader)
-	exe, err := os.Executable()
-	if err != nil {
-		return err
-	}
-
-	exe, err = filepath.EvalSymlinks(exe)
+	exe, err := filepath.EvalSymlinks(self_exe)
 	if err != nil {
 		return err
 	}
