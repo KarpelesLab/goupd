@@ -7,21 +7,11 @@ import (
 	"syscall"
 )
 
-var restartCallback func() error = nil
-
-func restartProgram() error {
-	if restartCallback != nil {
-		return restartCallback()
-	}
-
+func RestartProgram() error {
 	exe, err := os.Executable()
 	if err != nil {
 		return err
 	}
 
 	return syscall.Exec(exe, os.Args, append(os.Environ(), "GOUPD_DELAY=1"))
-}
-
-func SetRestartCallback(cb func() error) {
-	restartCallback = cb
 }

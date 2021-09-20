@@ -8,13 +8,7 @@ import (
 	"syscall"
 )
 
-var restartCallback func() error = nil
-
-func restartProgram() error {
-	if restartCallback != nil {
-		return restartCallback()
-	}
-
+func RestartProgram() error {
 	exe, err := os.Executable()
 	if err != nil {
 		return err
@@ -32,8 +26,4 @@ func restartProgram() error {
 
 	os.Exit(0)
 	return errors.New("program should have stopped, this message should never appear")
-}
-
-func SetRestartCallback(cb func() error) {
-	restartCallback = cb
 }

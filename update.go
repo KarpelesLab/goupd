@@ -20,6 +20,8 @@ var autoUpdateLock sync.Mutex
 // used to prepare for restart, such as duplicating fds before exec/etc.
 var BeforeRestart func()
 
+var RestartFunction func() error = RestartProgram
+
 // SignalVersion is called when seeing another peer running the same software
 // to notify of its version. This will check if the peer is updated compared
 // to us, and call RunAutoUpdateCheck() if necessary
@@ -77,7 +79,10 @@ func RunAutoUpdateCheck() bool {
 	if BeforeRestart != nil {
 		BeforeRestart()
 	}
-	restartProgram()
+	err = RestartFunction()
+	if err != nil {
+		log.Printf("[goupd] restart failed: %s", err)
+	}
 	return true
 }
 
