@@ -12,6 +12,8 @@ import (
 var unix_exe string
 
 func init() {
+	// query os.Executable() at init time since golang used to do it, but then stopped doing it
+	// see: https://go-review.googlesource.com/c/go/+/311790
 	exe, err := os.Executable()
 	if err == nil {
 		unix_exe = exe
