@@ -3,15 +3,31 @@
 package goupd
 
 import (
+	"log"
 	"os"
+	"path/filepath"
 	"syscall"
 )
 
-func RestartProgram() error {
+var unix_exe string
+
+func init() {
 	exe, err := os.Executable()
-	if err != nil {
-		return err
+	if err == nil {
+		unix_exe = exe
+		return
 	}
 
-	return syscall.Exec(exe, os.Args, append(os.Environ(), "GOUPD_DELAY=1"))
+	exe, err = filepath.Abs(os.Args[0])
+	if err == nil {
+		unix_exe = exe
+		log.Printf("[goupd] Unable to locate executable with the good method, using %s instead", unix_exe)
+		return
+	}
+	unix_exe = os.Args[0]
+	log.Printf("[goupd] Unable to locate executable with ether the good method or the bad method, using %s instead", unix_exe)
+}
+
+func RestartProgram() error {
+	return syscall.Exec(unix_exe, os.Args, append(os.Environ(), "GOUPD_DELAY=1"))
 }
