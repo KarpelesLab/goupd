@@ -14,7 +14,7 @@ func RestartProgram() error {
 		Files: []uintptr{uintptr(syscall.Stdin), uintptr(syscall.Stdout), uintptr(syscall.Stderr)},
 	}
 
-	_, _, err = syscall.StartProcess(self_exe, os.Args, pattr)
+	_, _, err := syscall.StartProcess(self_exe, os.Args, pattr)
 	if err != nil {
 		return err
 	}
