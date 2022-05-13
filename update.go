@@ -187,7 +187,7 @@ func installUpdate(r io.Reader) error {
 	// install updated file (in io.Reader)
 	exe, err := filepath.EvalSymlinks(self_exe)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find exe: %w", err)
 	}
 
 	// decompose executable
@@ -198,18 +198,18 @@ func installUpdate(r io.Reader) error {
 	newPath := filepath.Join(dir, "."+name+".new")
 	fp, err := os.OpenFile(newPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create new file: %w", err)
 	}
 	defer fp.Close()
 
 	_, err = io.Copy(fp, r)
 	if err != nil {
-		return err
+		return fmt.Errorf("write failed: %w", err)
 	}
 	err = fp.Close()
 	if err != nil {
 		// delayed error because disk full?
-		return err
+		return fmt.Errorf("close failed: %w", err)
 	}
 
 	// move files
@@ -217,14 +217,14 @@ func installUpdate(r io.Reader) error {
 
 	err = os.Rename(exe, oldPath)
 	if err != nil {
-		return err
+		return fmt.Errorf("update rename failed: %w", err)
 	}
 
 	err = os.Rename(newPath, exe)
 	if err != nil {
 		// rename failed, revert previous rename (hopefully successful)
 		os.Rename(oldPath, exe)
-		return err
+		return fmt.Errorf("update second rename failed: %w", err)
 	}
 
 	// attempt to remove old
