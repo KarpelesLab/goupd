@@ -206,7 +206,11 @@ func installUpdate(r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	fp.Close()
+	err = fp.Close()
+	if err != nil {
+		// delayed error because disk full?
+		return err
+	}
 
 	// move files
 	oldPath := filepath.Join(dir, "."+name+".old")
