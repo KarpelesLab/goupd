@@ -11,6 +11,7 @@ var (
 	CHANNEL      string = "stable"
 	GIT_TAG      string = ""
 	DATE_TAG     string = "0"
+	VERSION      string = ""
 	HOST         string = "https://dist-go.tristandev.net/"
 )
 
@@ -19,6 +20,7 @@ func init() {
 	if !ok {
 		return
 	}
+	VERSION = bi.Main.Version
 	if PROJECT_NAME == "unconfigured" {
 		PROJECT_NAME = path.Base(bi.Path) // full path of project
 	}

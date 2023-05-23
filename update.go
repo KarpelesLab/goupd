@@ -4,7 +4,6 @@ import (
 	"compress/bzip2"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
@@ -119,17 +118,7 @@ func GetUpdate(projectName, curTag, os, arch string) (string, string, string, er
 		// for example LATEST-testing
 		latest += "-" + CHANNEL
 	}
-	resp, err := http.Get(latest)
-	if err != nil {
-		return "", "", "", fmt.Errorf("failed to get latest version: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return "", "", "", fmt.Errorf("failed to get latest version: %s", resp.Status)
-	}
-
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := httpGet(latest)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to read latest version: %w", err)
 	}
@@ -152,17 +141,7 @@ func GetUpdate(projectName, curTag, os, arch string) (string, string, string, er
 	}
 
 	// check if compatible version is available
-	resp, err = http.Get(HOST + projectName + "/" + updPrefix + ".arch")
-	if err != nil {
-		return "", "", "", fmt.Errorf("failed to get arch info: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != 200 {
-		return "", "", "", fmt.Errorf("failed to get arch info: %s", resp.Status)
-	}
-
-	body, err = ioutil.ReadAll(resp.Body)
+	body, err = httpGet(HOST + projectName + "/" + updPrefix + ".arch")
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to read arch info: %w", err)
 	}
