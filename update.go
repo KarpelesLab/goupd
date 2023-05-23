@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"strings"
 	"sync"
 )
 
@@ -118,14 +117,12 @@ func GetUpdate(projectName, curTag, os, arch string) (string, string, string, er
 		// for example LATEST-testing
 		latest += "-" + CHANNEL
 	}
-	body, err := httpGet(latest)
+	updInfo, err := httpGetFields(latest)
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to read latest version: %w", err)
 	}
-
-	updInfo := strings.SplitN(strings.TrimSpace(string(body)), " ", 3)
 	if len(updInfo) != 3 {
-		return "", "", "", fmt.Errorf("failed to parse update data (%s)", body)
+		return "", "", "", fmt.Errorf("failed to parse update data (%v)", updInfo)
 	}
 
 	dateTag := updInfo[0]
@@ -141,14 +138,14 @@ func GetUpdate(projectName, curTag, os, arch string) (string, string, string, er
 	}
 
 	// check if compatible version is available
-	body, err = httpGet(HOST + projectName + "/" + updPrefix + ".arch")
+	archs, err := httpGetFields(HOST + projectName + "/" + updPrefix + ".arch")
 	if err != nil {
 		return "", "", "", fmt.Errorf("failed to read arch info: %w", err)
 	}
 
 	found := false
 
-	for _, subarch := range strings.Split(strings.TrimSpace(string(body)), " ") {
+	for _, subarch := range archs {
 		if subarch == target {
 			found = true
 			break

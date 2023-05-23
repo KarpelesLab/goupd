@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 func httpGet(p string) ([]byte, error) {
@@ -17,4 +18,12 @@ func httpGet(p string) ([]byte, error) {
 	}
 
 	return io.ReadAll(resp.Body)
+}
+
+func httpGetFields(p string) ([]string, error) {
+	res, err := httpGet(p)
+	if err != nil {
+		return nil, err
+	}
+	return strings.Fields(string(res)), nil
 }
