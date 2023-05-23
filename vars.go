@@ -8,7 +8,7 @@ import (
 var (
 	PROJECT_NAME string = "unconfigured"
 	MODE         string = "DEV"
-	CHANNEL      string = "stable"
+	CHANNEL      string = "" // output of: git rev-parse --abbrev-ref HEAD
 	GIT_TAG      string = ""
 	DATE_TAG     string = "0"
 	VERSION      string = ""
