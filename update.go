@@ -40,6 +40,15 @@ func SignalVersion(git, build string) {
 	go RunAutoUpdateCheck()
 }
 
+// SignalVersionChannel performs the same as SignalVersion but will also check channel
+func SignalVersionChannel(git, build, channel string) {
+	if channel != CHANNEL {
+		return
+	}
+
+	SignalVersion(git, build)
+}
+
 // RunAutoUpdateCheck will perform the update check, update the executable and
 // return false if no update was performed. In case of update the program
 // should restart and RunAutoUpdateCheck() should not return, but if it does,
