@@ -10,7 +10,7 @@ import (
 )
 
 func AutoUpdate(allowTest bool) {
-	log.Printf("[goupd] Running project %s version %s built %s", PROJECT_NAME, GIT_TAG, DATE_TAG)
+	log.Printf("[goupd] Running project %s[%s] version %s built %s", PROJECT_NAME, CHANNEL, GIT_TAG, DATE_TAG)
 
 	delay := os.Getenv("GOUPD_DELAY")
 	if delay != "" {

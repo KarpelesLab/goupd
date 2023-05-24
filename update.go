@@ -127,7 +127,7 @@ func GetUpdate(projectName, curTag, os, arch string) (string, string, string, er
 
 	dateTag := updInfo[0]   // 20230518035112
 	gitTag := updInfo[1]    // e894f37
-	updPrefix := updInfo[2] // packagename-stable_20230518035112_e894f37
+	updPrefix := updInfo[2] // packagename_stable_20230518035112_e894f37
 
 	target := os + "_" + arch
 	dlUrl := HOST + projectName + "/" + updPrefix + "/" + projectName + "_" + target + ".bz2"
