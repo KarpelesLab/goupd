@@ -56,7 +56,7 @@ func RunAutoUpdateCheck() bool {
 
 	updated := false
 
-	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, func(dateTag, gitTag string, r io.Reader) error {
+	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, CHANNEL, func(dateTag, gitTag string, r io.Reader) error {
 		log.Printf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", dateTag, gitTag, DATE_TAG, GIT_TAG)
 		updated = true
 
@@ -84,8 +84,50 @@ func RunAutoUpdateCheck() bool {
 	return true
 }
 
-func Fetch(projectName, curTag, os, arch string, cb func(dateTag, gitTag string, r io.Reader) error) error {
-	dlUrl, dateTag, gitTag, err := GetUpdate(projectName, curTag, os, arch)
+// SwitchChannel will update the current running daemon to run on the given channel. It will
+// return false if the running instance is already the latest version on that channel
+func SwitchChannel(channel string) bool {
+	autoUpdateLock.Lock()
+	defer autoUpdateLock.Unlock()
+
+	// get latest version on that channel
+	if PROJECT_NAME == "unconfigured" {
+		log.Println("[goupd] Auto-updater failed to run, project not properly configured")
+		return false
+	}
+
+	updated := false
+
+	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, channel, func(dateTag, gitTag string, r io.Reader) error {
+		log.Printf("[goupd] Switching to channel %s version %s/%s (current: %s/%s) - downloading...", channel, dateTag, gitTag, DATE_TAG, GIT_TAG)
+		updated = true
+
+		return installUpdate(r)
+	})
+
+	if err != nil {
+		log.Printf("[goupd] Auto-updater failed: %s", err)
+		return false
+	} else if !updated {
+		return false
+	}
+
+	busyLock()
+	defer busyUnlock()
+
+	log.Printf("[goupd] Program upgraded, restarting")
+	if BeforeRestart != nil {
+		BeforeRestart()
+	}
+	err = RestartFunction()
+	if err != nil {
+		log.Printf("[goupd] restart failed: %s", err)
+	}
+	return true
+}
+
+func Fetch(projectName, curTag, os, arch, channel string, cb func(dateTag, gitTag string, r io.Reader) error) error {
+	dlUrl, dateTag, gitTag, err := GetUpdate(projectName, curTag, os, arch, channel)
 	if err != nil {
 		return err
 	}
@@ -111,11 +153,11 @@ func Fetch(projectName, curTag, os, arch string, cb func(dateTag, gitTag string,
 	return cb(dateTag, gitTag, r)
 }
 
-func GetUpdate(projectName, curTag, os, arch string) (string, string, string, error) {
+func GetUpdate(projectName, curTag, os, arch, channel string) (string, string, string, error) {
 	latest := HOST + projectName + "/LATEST"
-	if CHANNEL != "" {
+	if channel != "" {
 		// for example LATEST-testing
-		latest += "-" + CHANNEL
+		latest += "-" + channel
 	}
 	updInfo, err := httpGetFields(latest)
 	if err != nil {
