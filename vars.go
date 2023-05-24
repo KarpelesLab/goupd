@@ -57,6 +57,7 @@ func GetVars() map[string]string {
 		"CHANNEL":      CHANNEL,
 		"GIT_TAG":      GIT_TAG,
 		"DATE_TAG":     DATE_TAG,
+		"VERSION":      VERSION,
 		"HOST":         HOST,
 	}
 }
