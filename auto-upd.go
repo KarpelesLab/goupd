@@ -1,7 +1,8 @@
 package goupd
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
 	"os"
 	"os/signal"
 	"strconv"
@@ -10,13 +11,13 @@ import (
 )
 
 func AutoUpdate(allowTest bool) {
-	log.Printf("[goupd] Running project %s[%s] version %s built %s", PROJECT_NAME, CHANNEL, GIT_TAG, DATE_TAG)
+	slog.Info(fmt.Sprintf("[goupd] Running project %s[%s] version %s built %s", PROJECT_NAME, CHANNEL, GIT_TAG, DATE_TAG), "event", "goupd:init:autoupdate", "goupd.project", PROJECT_NAME)
 
 	delay := os.Getenv("GOUPD_DELAY")
 	if delay != "" {
 		i, err := strconv.Atoi(delay)
 		if err == nil {
-			log.Printf("[goupd] Just upgraded, delaying program start...")
+			slog.Debug("[goupd] Just upgraded, delaying program start...", "event", "goupd:init:delay")
 			time.Sleep(time.Duration(i) * time.Second)
 		}
 		os.Unsetenv("GOUPD_DELAY")
@@ -28,7 +29,7 @@ func AutoUpdate(allowTest bool) {
 	}
 
 	if MODE != "PROD" {
-		log.Println("[goupd] Auto-updater disabled since not in production mode")
+		slog.Debug("[goupd] Auto-updater disabled since not in production mode", "event", "goupd:init:devmod_disabled")
 		return
 	}
 

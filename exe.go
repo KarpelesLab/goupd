@@ -1,7 +1,8 @@
 package goupd
 
 import (
-	"log"
+	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -20,9 +21,9 @@ func init() {
 	exe, err = filepath.Abs(os.Args[0])
 	if err == nil {
 		self_exe = exe
-		log.Printf("[goupd] Unable to locate executable with the good method, using %s instead", self_exe)
+		slog.Error(fmt.Sprintf("[goupd] Unable to locate executable with the good method, using %s instead", self_exe), "event", "goupd:init:selfexe_fallback")
 		return
 	}
 	self_exe = os.Args[0]
-	log.Printf("[goupd] Unable to locate executable with ether the good method or the bad method, using %s instead", self_exe)
+	slog.Error(fmt.Sprintf("[goupd] Unable to locate executable with ether the good method or the bad method, using %s instead", self_exe), "event", "goupd:init:selfexe_fail")
 }

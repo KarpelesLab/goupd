@@ -4,7 +4,7 @@ import (
 	"compress/bzip2"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -59,21 +59,21 @@ func RunAutoUpdateCheck() bool {
 
 	// get latest version
 	if PROJECT_NAME == "unconfigured" {
-		log.Println("[goupd] Auto-updater failed to run, project not properly configured")
+		slog.Error("[goupd] Auto-updater failed to run, project not properly configured", "event", "goupd:badcfg")
 		return false
 	}
 
 	updated := false
 
 	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, CHANNEL, func(dateTag, gitTag string, r io.Reader) error {
-		log.Printf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", dateTag, gitTag, DATE_TAG, GIT_TAG)
+		slog.Info(fmt.Sprintf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", dateTag, gitTag, DATE_TAG, GIT_TAG), "event", "goupd:update_found", "goupd.project", PROJECT_NAME)
 		updated = true
 
 		return installUpdate(r)
 	})
 
 	if err != nil {
-		log.Printf("[goupd] Auto-updater failed: %s", err)
+		slog.Error(fmt.Sprintf("[goupd] Auto-updater failed: %s", err), "event", "goupd:update_fail", "goupd.project", PROJECT_NAME)
 		return false
 	} else if !updated {
 		return false
@@ -82,13 +82,13 @@ func RunAutoUpdateCheck() bool {
 	busyLock()
 	defer busyUnlock()
 
-	log.Printf("[goupd] Program upgraded, restarting")
+	slog.Info("[goupd] Program upgraded, restarting", "event", "goupd:restart_trigger", "goupd.project", PROJECT_NAME)
 	if BeforeRestart != nil {
 		BeforeRestart()
 	}
 	err = RestartFunction()
 	if err != nil {
-		log.Printf("[goupd] restart failed: %s", err)
+		slog.Error(fmt.Sprintf("[goupd] restart failed: %s", err), "event", "goupd:restart_fail", "goupd.project", PROJECT_NAME)
 	}
 	return true
 }
@@ -101,21 +101,21 @@ func SwitchChannel(channel string) bool {
 
 	// get latest version on that channel
 	if PROJECT_NAME == "unconfigured" {
-		log.Println("[goupd] Auto-updater failed to run, project not properly configured")
+		slog.Error("[goupd] Auto-updater failed to run, project not properly configured", "event", "goupd:switch_channel:badcfg")
 		return false
 	}
 
 	updated := false
 
 	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, channel, func(dateTag, gitTag string, r io.Reader) error {
-		log.Printf("[goupd] Switching to channel %s version %s/%s (current: %s/%s) - downloading...", channel, dateTag, gitTag, DATE_TAG, GIT_TAG)
+		slog.Info(fmt.Sprintf("[goupd] Switching to channel %s version %s/%s (current: %s/%s) - downloading...", channel, dateTag, gitTag, DATE_TAG, GIT_TAG), "event", "goupd:switch_channel:running", "goupd.project", PROJECT_NAME)
 		updated = true
 
 		return installUpdate(r)
 	})
 
 	if err != nil {
-		log.Printf("[goupd] Auto-updater failed: %s", err)
+		slog.Error(fmt.Sprintf("[goupd] Auto-updater failed: %s", err), "event", "goupd:switch_channel:fail", "goupd.project", PROJECT_NAME)
 		return false
 	} else if !updated {
 		return false
@@ -124,13 +124,13 @@ func SwitchChannel(channel string) bool {
 	busyLock()
 	defer busyUnlock()
 
-	log.Printf("[goupd] Program upgraded, restarting")
+	slog.Info(fmt.Sprintf("[goupd] Program upgraded, restarting"), "event", "goupd:switch_channel:restart", "goupd.project", PROJECT_NAME)
 	if BeforeRestart != nil {
 		BeforeRestart()
 	}
 	err = RestartFunction()
 	if err != nil {
-		log.Printf("[goupd] restart failed: %s", err)
+		slog.Error(fmt.Sprintf("[goupd] restart failed: %s", err), "event", "goupd:switch_channel:restart_fail", "goupd.project", PROJECT_NAME)
 	}
 	return true
 }
