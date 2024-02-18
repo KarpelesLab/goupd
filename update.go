@@ -10,12 +10,6 @@ import (
 
 var autoUpdateLock sync.Mutex
 
-// BeforeRestart is called just before the program is restarted, and can be
-// used to prepare for restart, such as duplicating fds before exec/etc.
-var BeforeRestart func()
-
-var RestartFunction func() error = RestartProgram
-
 // SignalVersion is called when seeing another peer running the same software
 // to notify of its version. This will check if the peer is updated compared
 // to us, and call RunAutoUpdateCheck() if necessary
@@ -79,17 +73,8 @@ func RunAutoUpdateCheck() bool {
 		return false
 	}
 
-	busyLock()
-	defer busyUnlock()
-
 	slog.Info("[goupd] Program upgraded, restarting", "event", "goupd:restart_trigger", "goupd.project", PROJECT_NAME)
-	if BeforeRestart != nil {
-		BeforeRestart()
-	}
-	err = RestartFunction()
-	if err != nil {
-		slog.Error(fmt.Sprintf("[goupd] restart failed: %s", err), "event", "goupd:restart_fail", "goupd.project", PROJECT_NAME)
-	}
+	Restart()
 	return true
 }
 
@@ -132,17 +117,8 @@ func SwitchChannel(channel string) bool {
 		return false
 	}
 
-	busyLock()
-	defer busyUnlock()
-
 	slog.Info(fmt.Sprintf("[goupd] Program upgraded, restarting"), "event", "goupd:switch_channel:restart", "goupd.project", PROJECT_NAME)
-	if BeforeRestart != nil {
-		BeforeRestart()
-	}
-	err = RestartFunction()
-	if err != nil {
-		slog.Error(fmt.Sprintf("[goupd] restart failed: %s", err), "event", "goupd:switch_channel:restart_fail", "goupd.project", PROJECT_NAME)
-	}
+	Restart()
 	return true
 }
 
