@@ -20,7 +20,7 @@ type Version struct {
 
 // GetUpdate returns update details for a given project.
 //
-// Deprecated
+// Deprecated: You should be using GetLatest instead
 func GetUpdate(projectName, curTag, os, arch, channel string) (string, string, string, error) {
 	v, err := GetLatest(projectName, channel)
 	if err != nil {
