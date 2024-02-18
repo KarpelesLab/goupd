@@ -80,7 +80,9 @@ func (v *Version) CheckArch(os, arch string) error {
 	return fmt.Errorf("no version available for %s", target)
 }
 
-// URL generates the download url for the provided os and arch
+// URL generates the download url for the provided os and arch. Note that the URL will
+// point to a compressed file, use Download() to instead directly receive decompressed
+// data.
 func (v *Version) URL(os, arch string) string {
 	target := os + "_" + arch
 	dlUrl := HOST + v.ProjectName + "/" + v.UpdatePrefix + "/" + v.ProjectName + "_" + target + ".bz2"
@@ -88,12 +90,16 @@ func (v *Version) URL(os, arch string) string {
 	return dlUrl
 }
 
-type readClose struct {
+// readCloser is a simple struct to mix a Reader and a Closer, so these can be different
+// objects.
+type readCloser struct {
 	io.Reader
 	io.Closer
 }
 
-// Get returns a HTTP query to the download link
+// Download returns a ReadCloser that allows reading the updated executable data. It will
+// handle any decompression that might be needed, so the data can be read directly. Make
+// sure to close the returned ReadCloser after usage.
 func (v *Version) Download(os, arch string) (io.ReadCloser, error) {
 	resp, err := http.Get(v.URL(os, arch))
 	if err != nil {
@@ -105,5 +111,5 @@ func (v *Version) Download(os, arch string) (io.ReadCloser, error) {
 	}
 	r := bzip2.NewReader(resp.Body)
 
-	return &readClose{Reader: r, Closer: resp.Body}, nil
+	return &readCloser{Reader: r, Closer: resp.Body}, nil
 }
