@@ -8,11 +8,11 @@ import (
 )
 
 type Version struct {
-	ProjectName  string
-	Channel      string
-	DateTag      string
-	GitTag       string
-	UpdatePrefix string
+	ProjectName  string // project's name
+	Channel      string // project channel (typically, branch name)
+	DateTag      string // version's date tag
+	GitTag       string // version's git tag (first 7 digits of git hash)
+	UpdatePrefix string // internally used prefix
 }
 
 // GetUpdate returns update details for a given project.
