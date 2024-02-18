@@ -1,11 +1,9 @@
 package goupd
 
 import (
-	"compress/bzip2"
 	"fmt"
 	"io"
 	"log/slog"
-	"net/http"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -136,78 +134,25 @@ func SwitchChannel(channel string) bool {
 }
 
 func Fetch(projectName, curTag, os, arch, channel string, cb func(dateTag, gitTag string, r io.Reader) error) error {
-	dlUrl, dateTag, gitTag, err := GetUpdate(projectName, curTag, os, arch, channel)
+	version, err := GetLatest(projectName, channel)
 	if err != nil {
 		return err
 	}
-	if gitTag == curTag {
+	if version.GitTag == curTag {
 		return nil
 	}
-	if dlUrl == "" {
-		return nil
+	if err = version.CheckArch(os, arch); err != nil {
+		return err
 	}
 
 	// download actual update
-	resp, err := http.Get(dlUrl)
+	r, err := version.Download(os, arch)
 	if err != nil {
 		return fmt.Errorf("failed to download update: %w", err)
 	}
-	defer resp.Body.Close()
+	defer r.Close()
 
-	var r io.Reader
-	r = resp.Body
-
-	r = bzip2.NewReader(r)
-
-	return cb(dateTag, gitTag, r)
-}
-
-func GetUpdate(projectName, curTag, os, arch, channel string) (string, string, string, error) {
-	latest := HOST + projectName + "/LATEST"
-	if channel != "" {
-		// for example LATEST-testing
-		latest += "-" + channel
-	}
-	updInfo, err := httpGetFields(latest)
-	if err != nil {
-		return "", "", "", fmt.Errorf("failed to read latest version: %w", err)
-	}
-	if len(updInfo) != 3 {
-		return "", "", "", fmt.Errorf("failed to parse update data (%v)", updInfo)
-	}
-
-	dateTag := updInfo[0]   // 20230518035112
-	gitTag := updInfo[1]    // e894f37
-	updPrefix := updInfo[2] // packagename_stable_20230518035112_e894f37
-
-	target := os + "_" + arch
-	dlUrl := HOST + projectName + "/" + updPrefix + "/" + projectName + "_" + target + ".bz2"
-
-	if curTag == updInfo[1] {
-		// no update needed, don't perform arch check
-		return dlUrl, dateTag, gitTag, nil
-	}
-
-	// check if compatible version is available
-	archs, err := httpGetFields(HOST + projectName + "/" + updPrefix + ".arch")
-	if err != nil {
-		return "", "", "", fmt.Errorf("failed to read arch info: %w", err)
-	}
-
-	found := false
-
-	for _, subarch := range archs {
-		if subarch == target {
-			found = true
-			break
-		}
-	}
-
-	if !found {
-		return "", "", "", fmt.Errorf("no version available for %s", target)
-	}
-
-	return dlUrl, dateTag, gitTag, nil
+	return cb(version.DateTag, version.GitTag, r)
 }
 
 func installUpdate(r io.Reader) error {
