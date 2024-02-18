@@ -118,6 +118,10 @@ func SwitchChannel(channel string) bool {
 	return true
 }
 
+// Fetch will check for updates and call the provided callback cb if there is an
+// update.
+//
+// Deprecated: Use GetLatest instead
 func Fetch(projectName, curTag, os, arch, channel string, cb func(dateTag, gitTag string, r io.Reader) error) error {
 	version, err := GetLatest(projectName, channel)
 	if err != nil {
