@@ -105,10 +105,6 @@ func SwitchChannel(channel string) bool {
 		return false
 	}
 
-	if version.IsCurrent() {
-		return false
-	}
-
 	slog.Info(fmt.Sprintf("[goupd] Switching to channel %s version %s/%s (current: %s/%s) - downloading...", channel, version.DateTag, version.GitTag, DATE_TAG, GIT_TAG), "event", "goupd:switch_channel:running", "goupd.project", PROJECT_NAME)
 	err = version.Install()
 
