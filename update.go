@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"os"
-	"path/filepath"
 	"runtime"
 	"sync"
 )
@@ -61,19 +59,23 @@ func RunAutoUpdateCheck() bool {
 		return false
 	}
 
-	updated := false
-
-	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, CHANNEL, func(dateTag, gitTag string, r io.Reader) error {
-		slog.Info(fmt.Sprintf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", dateTag, gitTag, DATE_TAG, GIT_TAG), "event", "goupd:update_found", "goupd.project", PROJECT_NAME)
-		updated = true
-
-		return installUpdate(r)
-	})
-
+	version, err := GetLatest(PROJECT_NAME, CHANNEL)
 	if err != nil {
 		slog.Error(fmt.Sprintf("[goupd] Auto-updater failed: %s", err), "event", "goupd:update_fail", "goupd.project", PROJECT_NAME)
 		return false
-	} else if !updated {
+	}
+
+	if version.IsCurrent() {
+		// no update
+		return false
+	}
+
+	slog.Info(fmt.Sprintf("[goupd] New version found %s/%s (current: %s/%s) - downloading...", version.DateTag, version.GitTag, DATE_TAG, GIT_TAG), "event", "goupd:update_found", "goupd.project", PROJECT_NAME)
+
+	// install
+	err = version.Install()
+	if err != nil {
+		slog.Error(fmt.Sprintf("[goupd] Auto-updater failed: %s", err), "event", "goupd:update_fail", "goupd.project", PROJECT_NAME)
 		return false
 	}
 
@@ -94,6 +96,10 @@ func RunAutoUpdateCheck() bool {
 // SwitchChannel will update the current running daemon to run on the given channel. It will
 // return false if the running instance is already the latest version on that channel
 func SwitchChannel(channel string) bool {
+	if channel == CHANNEL {
+		return false
+	}
+
 	autoUpdateLock.Lock()
 	defer autoUpdateLock.Unlock()
 
@@ -103,19 +109,26 @@ func SwitchChannel(channel string) bool {
 		return false
 	}
 
-	updated := false
+	version, err := GetLatest(PROJECT_NAME, channel)
+	if err != nil {
+		// maybe channel does not exist?
+		return false
+	}
 
-	err := Fetch(PROJECT_NAME, GIT_TAG, runtime.GOOS, runtime.GOARCH, channel, func(dateTag, gitTag string, r io.Reader) error {
-		slog.Info(fmt.Sprintf("[goupd] Switching to channel %s version %s/%s (current: %s/%s) - downloading...", channel, dateTag, gitTag, DATE_TAG, GIT_TAG), "event", "goupd:switch_channel:running", "goupd.project", PROJECT_NAME)
-		updated = true
+	if err = version.CheckArch(runtime.GOOS, runtime.GOARCH); err != nil {
+		// TODO report errors
+		return false
+	}
 
-		return installUpdate(r)
-	})
+	if version.IsCurrent() {
+		return false
+	}
+
+	slog.Info(fmt.Sprintf("[goupd] Switching to channel %s version %s/%s (current: %s/%s) - downloading...", channel, version.DateTag, version.GitTag, DATE_TAG, GIT_TAG), "event", "goupd:switch_channel:running", "goupd.project", PROJECT_NAME)
+	err = version.Install()
 
 	if err != nil {
 		slog.Error(fmt.Sprintf("[goupd] Auto-updater failed: %s", err), "event", "goupd:switch_channel:fail", "goupd.project", PROJECT_NAME)
-		return false
-	} else if !updated {
 		return false
 	}
 
@@ -153,58 +166,4 @@ func Fetch(projectName, curTag, os, arch, channel string, cb func(dateTag, gitTa
 	defer r.Close()
 
 	return cb(version.DateTag, version.GitTag, r)
-}
-
-func installUpdate(r io.Reader) error {
-	// install updated file (in io.Reader)
-	exe, err := filepath.EvalSymlinks(self_exe)
-	if err != nil {
-		return fmt.Errorf("failed to find exe: %w", err)
-	}
-
-	// decompose executable
-	dir := filepath.Dir(exe)
-	name := filepath.Base(exe)
-
-	// copy data in new file
-	newPath := filepath.Join(dir, "."+name+".new")
-	fp, err := os.OpenFile(newPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
-	if err != nil {
-		return fmt.Errorf("failed to create new file: %w", err)
-	}
-	defer fp.Close()
-
-	_, err = io.Copy(fp, r)
-	if err != nil {
-		return fmt.Errorf("write failed: %w", err)
-	}
-	err = fp.Close()
-	if err != nil {
-		// delayed error because disk full?
-		return fmt.Errorf("close failed: %w", err)
-	}
-
-	// move files
-	oldPath := filepath.Join(dir, "."+name+".old")
-
-	err = os.Rename(exe, oldPath)
-	if err != nil {
-		return fmt.Errorf("update rename failed: %w", err)
-	}
-
-	err = os.Rename(newPath, exe)
-	if err != nil {
-		// rename failed, revert previous rename (hopefully successful)
-		os.Rename(oldPath, exe)
-		return fmt.Errorf("update second rename failed: %w", err)
-	}
-
-	// attempt to remove old
-	err = os.Remove(oldPath)
-	if err != nil {
-		// hide it since remove failed
-		hideFile(oldPath)
-	}
-
-	return nil
 }

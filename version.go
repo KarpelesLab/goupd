@@ -5,6 +5,9 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
+	"path/filepath"
+	"runtime"
 )
 
 type Version struct {
@@ -80,6 +83,12 @@ func (v *Version) CheckArch(os, arch string) error {
 	return fmt.Errorf("no version available for %s", target)
 }
 
+// IsCurrent returns true if the version matches the currently running program
+func (v *Version) IsCurrent() bool {
+	// we only check GitTag
+	return v.GitTag == GIT_TAG
+}
+
 // URL generates the download url for the provided os and arch. Note that the URL will
 // point to a compressed file, use Download() to instead directly receive decompressed
 // data.
@@ -112,4 +121,65 @@ func (v *Version) Download(os, arch string) (io.ReadCloser, error) {
 	r := bzip2.NewReader(resp.Body)
 
 	return &readCloser{Reader: r, Closer: resp.Body}, nil
+}
+
+// Install will download the update and replace the currently running executable data
+func (v *Version) Install() error {
+	r, err := v.Download(runtime.GOOS, runtime.GOARCH)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+
+	// install updated file (in io.Reader)
+	exe, err := filepath.EvalSymlinks(self_exe)
+	if err != nil {
+		return fmt.Errorf("failed to find exe: %w", err)
+	}
+
+	// decompose executable
+	dir := filepath.Dir(exe)
+	name := filepath.Base(exe)
+
+	// copy data in new file
+	newPath := filepath.Join(dir, "."+name+".new")
+	fp, err := os.OpenFile(newPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create new file: %w", err)
+	}
+	defer fp.Close()
+
+	_, err = io.Copy(fp, r)
+	if err != nil {
+		return fmt.Errorf("write failed: %w", err)
+	}
+	err = fp.Close()
+	if err != nil {
+		// delayed error because disk full?
+		return fmt.Errorf("close failed: %w", err)
+	}
+
+	// move files
+	oldPath := filepath.Join(dir, "."+name+".old")
+
+	err = os.Rename(exe, oldPath)
+	if err != nil {
+		return fmt.Errorf("update rename failed: %w", err)
+	}
+
+	err = os.Rename(newPath, exe)
+	if err != nil {
+		// rename failed, revert previous rename (hopefully successful)
+		os.Rename(oldPath, exe)
+		return fmt.Errorf("update second rename failed: %w", err)
+	}
+
+	// attempt to remove old
+	err = os.Remove(oldPath)
+	if err != nil {
+		// hide it since remove failed
+		hideFile(oldPath)
+	}
+
+	return nil
 }
