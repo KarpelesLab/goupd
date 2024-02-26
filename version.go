@@ -174,10 +174,21 @@ func (v *Version) SaveAs(fn string) error {
 
 	// move files
 	oldPath := filepath.Join(dir, "."+name+".old")
+	if _, err := os.Stat(exe); err == nil {
+		// if old file exists
+		err = os.Rename(exe, oldPath)
+		if err != nil {
+			return fmt.Errorf("update rename failed: %w", err)
+		}
 
-	err = os.Rename(exe, oldPath)
-	if err != nil {
-		return fmt.Errorf("update rename failed: %w", err)
+		defer func() {
+			// attempt to remove old
+			err = os.Remove(oldPath)
+			if err != nil {
+				// hide it since remove failed
+				hideFile(oldPath)
+			}
+		}()
 	}
 
 	err = os.Rename(newPath, exe)
@@ -185,13 +196,6 @@ func (v *Version) SaveAs(fn string) error {
 		// rename failed, revert previous rename (hopefully successful)
 		os.Rename(oldPath, exe)
 		return fmt.Errorf("update second rename failed: %w", err)
-	}
-
-	// attempt to remove old
-	err = os.Remove(oldPath)
-	if err != nil {
-		// hide it since remove failed
-		hideFile(oldPath)
 	}
 
 	return nil
