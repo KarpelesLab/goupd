@@ -125,6 +125,12 @@ func (v *Version) Download(os, arch string) (io.ReadCloser, error) {
 
 // Install will download the update and replace the currently running executable data
 func (v *Version) Install() error {
+	return v.SaveAs(self_exe)
+}
+
+// SaveAs will download the update to the given local filename, performing an atomic
+// replacement of the file
+func (v *Version) SaveAs(fn string) error {
 	r, err := v.Download(runtime.GOOS, runtime.GOARCH)
 	if err != nil {
 		return err
@@ -132,9 +138,9 @@ func (v *Version) Install() error {
 	defer r.Close()
 
 	// install updated file (in io.Reader)
-	exe, err := filepath.EvalSymlinks(self_exe)
+	exe, err := filepath.EvalSymlinks(fn)
 	if err != nil {
-		return fmt.Errorf("failed to find exe: %w", err)
+		return fmt.Errorf("failed to find download target: %w", err)
 	}
 
 	// decompose executable
