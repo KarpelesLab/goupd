@@ -81,6 +81,9 @@ func RunAutoUpdateCheck() bool {
 // SwitchChannel will update the current running daemon to run on the given channel. It will
 // return false if the running instance is already the latest version on that channel
 func SwitchChannel(channel string) bool {
+	if channel == "" {
+		channel = "master"
+	}
 	if channel == CHANNEL {
 		return false
 	}
