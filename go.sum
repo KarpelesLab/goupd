@@ -1,0 +1,8 @@
+github.com/KarpelesLab/emitter v0.2.1 h1:DlWLjZAa2c9wc02K5f4zHAt0Jv1C1tQgLgT7VbF7yYI=
+github.com/KarpelesLab/emitter v0.2.1/go.mod h1:JOaQADpNVN0OJfhkDurRCUkMEotPM8Pukh3DadTOY+4=
+github.com/KarpelesLab/pjson v0.1.7 h1:j0EItKHyf/dXPZJXbMAS1Ioxlq1LTNH9YmPkmX/JN3s=
+github.com/KarpelesLab/pjson v0.1.7/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
+github.com/KarpelesLab/typutil v0.2.16 h1:uVA+2/NfmQ6nzNsy8Eh4q3AuyWGWnqHKyQ4llbTwt+o=
+github.com/KarpelesLab/typutil v0.2.16/go.mod h1:lqs248XpjFstgZMT5ZVP4/3B6zT7eEeq5kKj4/tC1IQ=
+golang.org/x/exp v0.0.0-20230905200255-921286631fa9 h1:GoHiUyI/Tp2nVkLI2mCxVkOjsbSXD66ic0XW0js0R9g=
+golang.org/x/exp v0.0.0-20230905200255-921286631fa9/go.mod h1:S2oDrQGGwySpoQPVqRShND87VCbxmc6bL1Yd2oYrm6k=

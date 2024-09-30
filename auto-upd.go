@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"syscall"
 	"time"
+
+	"github.com/KarpelesLab/emitter"
 )
 
 func AutoUpdate(allowTest bool) {
@@ -59,10 +61,16 @@ func autoUpdaterThread(immediateInitialRun bool) {
 	if RunAutoUpdateCheck() {
 		return
 	}
+	trig := emitter.Global.On("check_update")
+	defer emitter.Global.Off("check_update", trig)
+	tick := time.NewTicker(time.Hour)
+	defer tick.Stop()
 
 	for {
-		time.Sleep(time.Hour)
-
+		select {
+		case <-tick.C:
+		case <-trig:
+		}
 		// stop auto-updater loop if there was an update
 		if RunAutoUpdateCheck() {
 			return
