@@ -9,7 +9,7 @@ import (
 
 // BeforeRestart is called just before the program is restarted, and can be
 // used to prepare for restart, such as duplicating fds before exec/etc.
-var BeforeRestart func()
+var BeforeRestart func() = shutdown.RunDefer
 
 // RestartFunction is the functions that actually performs the restart, and
 // by default will be RestartProgram which is a OS dependent implementation
@@ -22,8 +22,6 @@ func Restart() {
 	if BeforeRestart != nil {
 		BeforeRestart()
 	}
-
-	shutdown.RunDefer()
 
 	err := RestartFunction()
 	if err != nil {
