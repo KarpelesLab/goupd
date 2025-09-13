@@ -4,7 +4,10 @@ go 1.22.2
 
 toolchain go1.23.0
 
-require github.com/KarpelesLab/emitter v0.2.1
+require (
+	github.com/KarpelesLab/emitter v0.2.1
+	github.com/KarpelesLab/shutdown v1.1.1
+)
 
 require (
 	github.com/KarpelesLab/pjson v0.1.7 // indirect

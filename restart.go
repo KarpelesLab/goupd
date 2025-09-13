@@ -3,6 +3,8 @@ package goupd
 import (
 	"fmt"
 	"log/slog"
+
+	"github.com/KarpelesLab/shutdown"
 )
 
 // BeforeRestart is called just before the program is restarted, and can be
@@ -20,6 +22,9 @@ func Restart() {
 	if BeforeRestart != nil {
 		BeforeRestart()
 	}
+
+	shutdown.RunDefer()
+
 	err := RestartFunction()
 	if err != nil {
 		slog.Error(fmt.Sprintf("[goupd] restart failed: %s", err), "event", "goupd:switch_channel:restart_fail", "goupd.project", PROJECT_NAME)
