@@ -48,6 +48,15 @@ func Busy() {
 	busyState += 1
 }
 
+func TryBusy() bool {
+	if !busyMutex.TryLock() {
+		return false
+	}
+	defer busyMutex.Unlock()
+	busyState += 1
+	return true
+}
+
 func Unbusy() {
 	busyMutex.Lock()
 	defer busyMutex.Unlock()
